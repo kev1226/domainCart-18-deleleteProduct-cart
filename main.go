@@ -13,7 +13,7 @@ func main() {
 	r := gin.Default()
 	routes.SetupRoutes(r)
 
-	if err := r.Run(":3033"); err != nil {
+	if err := r.Run(":3038"); err != nil {
 		log.Fatal("Error starting server: ", err)
 	}
 }

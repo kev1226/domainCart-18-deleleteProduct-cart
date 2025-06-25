@@ -1,40 +1,61 @@
-name: Deploy to QA - deleteProduct-cart
+name: Build & Deploy delete-product-cart to EC2
 
 on:
   push:
     branches:
       - qa
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  deploy:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v3
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+      - name: Set deployment variables
+        id: set-vars
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/qa" ]]; then
+            echo "env=QA" >> $GITHUB_OUTPUT
+            echo "tag=qa-latest" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.pull_request.base.ref }}" == "main" ]]; then
+            echo "env=PROD" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          fi
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Push Docker image
+      - name: Build Docker image
         run: |
-          docker build -t kalemat/18-deleteProduct-cart:qa-latest .
-          docker push kalemat/18-deleteProduct-cart:qa-latest
+          docker build -t kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }} .
 
-      - name: Connect to EC2 and Deploy Container
-        uses: appleboy/ssh-action@v1.0.0
+      - name: Push Docker image to Docker Hub
+        run: |
+          docker push kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
+
+      - name: Connect and deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.EC2_QA_HOST }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          host: ${{ secrets[format('EC2_HOST_{0}', steps.set-vars.outputs.env)] }}
+          username: ${{ secrets[format('EC2_USER_{0}', steps.set-vars.outputs.env)] }}
+          key: ${{ secrets[format('EC2_KEY_{0}', steps.set-vars.outputs.env)] }}
+          port: 22
+          timeout: 30s
+          command_timeout: 10m
           script: |
-            docker pull kalemat/18-deleteProduct-cart:qa-latest
-            docker stop deleteProduct-cart || true
-            docker rm deleteProduct-cart || true
-            docker run -d --name deleteProduct-cart -p 3038:3038 kalemat/18-deleteProduct-cart:qa-latest
+            docker stop 18-delete-product-cart || true
+            docker rm 18-delete-product-cart || true
+            docker pull kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
+            docker run -d \
+              --name 18-delete-product-cart \
+              --restart always \
+              -p 3038:3038 \
+              kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
