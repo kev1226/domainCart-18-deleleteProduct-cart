@@ -21,6 +21,7 @@ WORKDIR /root/
 
 COPY --from=builder /app/deleteProduct-cart .
 
+# Documentar el puerto expuesto
 EXPOSE 3038
 
 CMD ["./deleteProduct-cart"]
