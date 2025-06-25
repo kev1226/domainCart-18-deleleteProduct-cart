@@ -1,0 +1,40 @@
+name: Deploy to QA - deleteProduct-cart
+
+on:
+  push:
+    branches:
+      - qa
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and Push Docker image
+        run: |
+          docker build -t kalemat/18-deleteProduct-cart:qa-latest .
+          docker push kalemat/18-deleteProduct-cart:qa-latest
+
+      - name: Connect to EC2 and Deploy Container
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_QA_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker pull kalemat/18-deleteProduct-cart:qa-latest
+            docker stop deleteProduct-cart || true
+            docker rm deleteProduct-cart || true
+            docker run -d --name deleteProduct-cart -p 3038:3038 kalemat/18-deleteProduct-cart:qa-latest
