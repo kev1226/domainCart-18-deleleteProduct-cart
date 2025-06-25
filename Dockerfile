@@ -9,8 +9,8 @@ RUN go mod download
 
 COPY . .
 
-# Compilar con el nombre del servicio
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o deleteProduct-cart .
+# Compilar el binario para Linux con enlaces estáticos
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o delete-cart .
 
 # Etapa 2: Imagen final liviana
 FROM alpine:latest
@@ -19,9 +19,10 @@ RUN apk --no-cache add ca-certificates
 
 WORKDIR /root/
 
-COPY --from=builder /app/deleteProduct-cart .
+COPY --from=builder /app/delete-cart .
 
 # Documentar el puerto expuesto
 EXPOSE 3038
 
-CMD ["./deleteProduct-cart"]
+# Ejecutar el binario
+CMD ["./delete-cart"]
