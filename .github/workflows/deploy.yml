@@ -56,13 +56,13 @@ jobs:
             docker rm 18-deleteProduct-cart || true
 
             echo "⬇️ Pulling new image from Docker Hub..."
-            docker pull kalemat/18-deleteProduct:${{ steps.set-vars.outputs.tag }}
+            docker pull kalemat/18-deleteProduct-cart:${{ steps.set-vars.outputs.tag }}
 
             echo "🚀 Starting new container on port 3038..."
             docker run -d \
-              --name 18-deleteProduct \
+              --name 18-deleteProduct-cart \
               --restart always \
               -p 3038:3038 \
-              kalemat/18-deleteProduct:${{ steps.set-vars.outputs.tag }}
+              kalemat/18-deleteProduct-cart:${{ steps.set-vars.outputs.tag }}
 
             echo "✅ Deployment finished and will persist across EC2 reboots."
