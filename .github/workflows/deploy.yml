@@ -62,7 +62,7 @@ jobs:
             docker run -d \
               --name 18-deleteProduct \
               --restart always \
-              -p 3035:3035 \
+              -p 3038:3038 \
               kalemat/18-deleteProduct:${{ steps.set-vars.outputs.tag }}
 
             echo "✅ Deployment finished and will persist across EC2 reboots."
