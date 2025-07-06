@@ -36,11 +36,11 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t kalemat/18-deleteProduct-cart:${{ steps.set-vars.outputs.tag }} .
+          docker build -t kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }} .
 
       - name: Push Docker image to Docker Hub
         run: |
-          docker push kalemat/18-deleteProduct-cart:${{ steps.set-vars.outputs.tag }}
+          docker push kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
 
       - name: Connect and deploy to EC2
         uses: appleboy/ssh-action@v1.0.3
@@ -52,7 +52,17 @@ jobs:
           timeout: 30s
           command_timeout: 10m
           script: |
-            docker stop 18-deleteProduct-cart || true
-            docker rm 18-deleteProduct-cart || true
+            docker stop 18-delete-product-cart || true
+            docker rm 18-delete-product-cart || true
 
-            docker pul
+            echo "⬇️ Pulling new image from Docker Hub..."
+            docker pull kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
+
+            echo "🚀 Starting new container on port 3038..."
+            docker run -d \
+              --name 18-delete-product-cart \
+              --restart always \
+              -p 3038:3038 \
+              kalemat/18-delete-product-cart:${{ steps.set-vars.outputs.tag }}
+
+            echo "✅ Deployment finished and will persist across EC2 reboots."
